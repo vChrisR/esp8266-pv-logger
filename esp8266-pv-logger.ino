@@ -1,7 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <Soladin.h>
 
-#define dsInterval 15000
+#define dsInterval 30000
 #define SSID "wifissid" //put your wifi ssid here
 #define PASS "wifipass" //put your wifi key here
 #define APIKEY "abcdefgh" //put your thingspeak api key here
@@ -39,7 +39,7 @@ void loop() {
     retries++;
   }
   
-  if ((dataSent + dsInterval < millis()) && (WiFi.status() == WL_CONNECTED) && solConnect) {
+  if ((dataSent - millis()  > dsInterval) && (WiFi.status() == WL_CONNECTED) && solConnect) {
 //    debug(wifiClient, debugHost, debugPort, "Time to send data"); 
     successQ = false;
     retries = 0;
@@ -67,7 +67,7 @@ void loop() {
     }
   }
   
-  delay(1000*retries);
+  delay(1000*(retries+1));
   
   while(wifiClient.available()){
       wifiClient.readStringUntil('\r');
