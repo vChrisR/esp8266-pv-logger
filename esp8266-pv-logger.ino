@@ -3,16 +3,16 @@
 
 #define dsInterval 30000
 #define SSID "wifissid" //put your wifi ssid here
-#define PASS "wifipass" //put your wifi key here
-#define APIKEY "abcdefgh" //put your thingspeak api key here
+#define PASS "wifipassword" //put your wifi key here
+#define APIKEY "abcdefg" //put your thingspeak api key here
 
 char targetHost[] = "api.thingspeak.com";
-//char debugHost[] = "192.168.1.2"; //If you want debugging enable this line and any other debug line below. Make sure to put the ip of your debugging host here. On the debug host run(linux): nc -k -l 3000
-#define debugPort 3000
+//char debugHost[] = "192.168.94.59"; //If you want debugging enable this line and any other debug line below. Make sure to put the ip of your debugging host here. On the debug host run(linux): nc -k -l 3000
+//#define debugPort 3000
 
 Soladin sol;
 boolean solConnect = false;
-unsigned long dataSent = millis();
+static unsigned long dataSent = millis();
 byte retries = 0;
 boolean successQ = false;
 
@@ -25,10 +25,10 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);  
   }     
- // debug(wifiClient, debugHost, debugPort, "wifi connected");
+  //debug(wifiClient, debugHost, debugPort, "wifi connected");
   
   sol.begin(&Serial);  
- // debug(wifiClient, debugHost, debugPort, "Sol begin done");
+  //debug(wifiClient, debugHost, debugPort, "Sol begin done");
 }
 
 void loop() {
@@ -39,8 +39,10 @@ void loop() {
     retries++;
   }
   
-  if ((dataSent - millis()  > dsInterval) && (WiFi.status() == WL_CONNECTED) && solConnect) {
-//    debug(wifiClient, debugHost, debugPort, "Time to send data"); 
+  if (((long)(millis()-dataSent) >= 0) && (WiFi.status() == WL_CONNECTED) && solConnect) {
+    //debug(wifiClient, debugHost, debugPort, "Time to send data"); 
+    //debug(wifiClient, debugHost, debugPort, String(millis()));      
+ 
     successQ = false;
     retries = 0;
     
@@ -51,23 +53,21 @@ void loop() {
         retries++;
       }            
     }
-       
-    if (! successQ) {
-      solConnect = false;
-      delay(15000);
-    }
     
+    solConnect = successQ;   
+        
     if (solConnect) {
- //     debug(wifiClient, debugHost, debugPort, "Sol connected");
+      //debug(wifiClient, debugHost, debugPort, "Soladin connected");
       String payload = thingSpeakPayload(float(sol.PVamp)/100, sol.DeviceTemp, float(sol.Totalpower)/100, sol.Gridpower, sol.Gridvolt, sol.PVvolt/10);
- //     debug(wifiClient, debugHost, debugPort, payload);      
-      if (thingSpeakSend(wifiClient, targetHost, 80, APIKEY, payload)) {;
-      dataSent = millis();
+      //debug(wifiClient, debugHost, debugPort, payload);      
+      if (thingSpeakSend(wifiClient, targetHost, 80, APIKEY, payload)) {;      
+        dataSent = millis() + dsInterval;        
       }
     }
+    
   }
-  
-  delay(1000*(retries+1));
+  //debug(wifiClient, debugHost, debugPort, String(retries));       
+  delay(1000+(retries*10000));
   
   while(wifiClient.available()){
       wifiClient.readStringUntil('\r');
